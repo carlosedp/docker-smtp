@@ -27,6 +27,7 @@ script:
 
 jobs:
   include:
+    - stage: Manifest
       script:
         - docker login -u="$DOCKER_USER" -p="$DOCKER_PASS"
         - echo "Downloading manifest-tool"
