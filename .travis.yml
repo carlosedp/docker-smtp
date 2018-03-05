@@ -1,0 +1,43 @@
+sudo: required
+language: bash
+services:
+- docker
+
+env:
+  global:
+    - IMAGE=carlosedp/docker-smtp
+    - QEMU_VERSION=v2.9.1-1
+    - VERSION=v1.0.0
+  matrix:
+    # TARGET = Base image architecture to be used
+    # ARCH = qemu binary to be downloaded from https://github.com/multiarch/qemu-user-static/releases
+    # TAG = Tag to be applied to the image when upload to DockerHub
+    # - TARGET=amd64 ARCH=amd64 TAG=amd64
+    - TARGET=arm64v8 ARCH=aarch64 TAG=arm64
+    - TARGET=arm32v7 ARCH=arm TAG=arm
+
+script:
+  - ./travis-build.sh
+  - >
+    if [ "$TRAVIS_BRANCH" == "master" -a "$TRAVIS_PULL_REQUEST" == "false" ]; then
+      # Push image
+      docker login -u="$DOCKER_USER" -p="$DOCKER_PASS"
+      docker push "$IMAGE":"$VERSION"-"$TAG"
+    fi
+
+jobs:
+  include:
+      script:
+        - docker login -u="$DOCKER_USER" -p="$DOCKER_PASS"
+        - echo "Downloading manifest-tool"
+        - wget https://github.com/estesp/manifest-tool/releases/download/v0.7.0/manifest-tool-linux-amd64
+        - mv manifest-tool-linux-amd64 manifest-tool
+        - chmod +x manifest-tool
+        - ./manifest-tool --version
+        - echo "Pushing manifest "$IMAGE":latest"
+        - ./manifest-tool push from-args --platforms linux/arm,linux/arm64 --template "$IMAGE:$VERSION-ARCH" --target "$IMAGE:latest"
+        - ./manifest-tool push from-args --platforms linux/arm,linux/arm64 --template "$IMAGE:$VERSION-ARCH" --target "$IMAGE:$VERSION"
+      env:
+        # Overwrite env to avoid running stage for entire
+        TARGET=none ARCH=none TAG=none
+
