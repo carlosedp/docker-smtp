@@ -1,5 +1,5 @@
 ARG target=arm32v7
-FROM $target/debian:jessie
+FROM $target/debian:stretch
 
 ARG arch=arm
 ENV ARCH=$arch
